@@ -1,3 +1,5 @@
 <?php
 
-define('FONT', 'Montserrat');
+return [
+        'FONT' => 'Montserrat'
+];

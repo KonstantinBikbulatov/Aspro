@@ -4,14 +4,10 @@ class Config
 {
     private static $settings = [];
 
-     static function getSetting($key, $fileName){
-        if(!self::$settings[$key]){
-            include __DIR__ . '/../configs/' .$fileName .'.php';
-
-            return constant($key);
+     protected function getSetting($key, $fileName){
+        if(self::$settings[$fileName] == null){
+            self::$settings[$fileName] = include __DIR__ .'/../configs/'.$fileName.'.php';
         }
-        else{
-            return self::$settings[$key];
-        }
+         return self::$settings[$fileName][$key];
     }
 }

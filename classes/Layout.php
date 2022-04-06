@@ -1,8 +1,6 @@
 <?php
 
-include 'Config.php';
-
-class Layout
+class Layout extends Config
 {
     protected static $_instance;
 
@@ -19,7 +17,7 @@ class Layout
     }
 
     protected function __construct() {
-        $font = Config::getSetting('FONT', self::fileSetting);
+        $font = $this->getSetting('FONT', self::fileSetting);
         $this->loadResource();
         $this->connectFont($font);
     }
