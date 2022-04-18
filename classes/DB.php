@@ -1,35 +1,70 @@
 <?php
 
-class DB extends Config
+class DB
 {
     protected static $_instance;
     private const fileSetting = 'db';
-    private static $dbh;
+    private static $pbo;
     private const INT = 'integer';
     private const STRING = 'varchar';
-    private const ID = 'id integer auto_increment primary key';
 
-    private function tableExists($nameTable)
+    private static $tableCache = [];
+
+    static function fetch($result){
+        $data = [];
+
+        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
+            $data = $row;
+        }
+        return $data;
+    }
+
+    public static function getModel($tableName){
+        $result = self::$pbo->query("SELECT `COLUMN_NAME` FROM `INFORMATION_SCHEMA`.`COLUMNS` WHERE `TABLE_SCHEMA`='aspro'  AND `TABLE_NAME`='$tableName';");
+        $result = self::fetch($result);
+        $columns = [];
+
+        for($i = 1; $i < count($result); $i++){
+            $columns[] = $result[$i]['COLUMN_NAME'];
+        }
+        return $columns;
+    }
+
+    public static function getModelId($tableName, $id){
+        $result = self::$pbo->query("SELECT * FROM $tableName WHERE id=$id");
+        return self::fetch($result);
+    }
+
+    public static function tableExists($nameTable)
     {
-        try {
-            $result = self::$dbh->query("SELECT 1 FROM $nameTable LIMIT 1");
-        } catch (Exception $e) {
-            return FALSE;
-        }
-        if ($result) {
+        if(self::$tableCache[$nameTable]){
             return true;
-        } else {
-            return false;
         }
+        else{
+            $result = self::$pbo->query("SELECT 1 FROM $nameTable LIMIT 1");
+            if ($result) {
+                self::$tableCache[$nameTable] = true;
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    public static function updateModel($table_name, $property, $id){
+        $sql = "UPDATE $table_name
+                    SET $property
+                    WHERE id = $id;";
+        echo $sql;
+        $result = self::$pbo->exec($sql);
     }
 
     public function insert($nameTable, $data)
     {
         if($this->tableExists($nameTable)){
-            $data = implode(',', $data);
-            $sql = "INSERT INTO products (name, price) VALUES ($data)";
-            self::$dbh->exec($sql);
-            $id = self::$dbh->lastInsertId();
+            $sql = "INSERT INTO $nameTable VALUES ($data)";
+            self::$pbo->exec($sql);
+            $id = self::$pbo->lastInsertId();
             return $id;
         }
         else{
@@ -37,36 +72,27 @@ class DB extends Config
         }
     }
 
-    public function select($nameTable){
-        $sql = "SELECT * FROM $nameTable WHERE price > 500";
-        $result = self::$dbh->query($sql);
-        $data = [];
-        while($row = $result->fetch()){
-            $data[] = $row;
-        }
-    }
-
-    public function createTable($nameTable)
+    public static function createTable($nameTable, $columns, $primaryKey = '')
     {
-        $sql = 'create table ' . $nameTable . '
+            $sql = "create table $nameTable
         (
-            ' . self::ID . ', 
-            name ' . self::STRING . '(30),
-            price ' . self::INT . '
-        );';
-        self::$dbh->exec($sql);
+            $primaryKey 
+            $columns
+        );";
+
+        self::$pbo->exec($sql);
     }
 
     protected function connectToDB()
     {
-        $pass = $this->getSetting('PASSWORD', self::fileSetting);
-        $user = $this->getSetting('LOGIN', self::fileSetting);
-        $db = $this->getSetting('DB', self::fileSetting);
-        $host = $this->getSetting('HOST', self::fileSetting);
-        $type = $this->getSetting('TYPE', self::fileSetting);
+        $pass = Config::getSetting(self::fileSetting,'PASSWORD');
+        $user = Config::getSetting(self::fileSetting,'LOGIN', );
+        $db = Config::getSetting(self::fileSetting,'DB', );
+        $host = Config::getSetting(self::fileSetting,'HOST', );
+        $type = Config::getSetting(self::fileSetting,'TYPE', );
         
         try {
-            self::$dbh = new PDO($type.':host='.$host.';dbname='.$db, $user, $pass);
+            self::$pbo = new PDO($type.':host='.$host.';dbname='.$db, $user, $pass);
         } catch (PDOException $e) {
             print "Error!: " . $e->getMessage() . "<br/>";
             die();
@@ -75,9 +101,7 @@ class DB extends Config
 
     protected function __construct()
     {
-        $this->connectToDB();
-        //$this->createTable("Products");
-    }
+        $this->connectToDB();}
 
     protected function __clone()
     {

@@ -1,11 +1,13 @@
 <?php
 
-class Layout extends Config
+class Layout
 {
     protected static $_instance;
 
     private $pathsCSS = [];
     private $pathsJS = [];
+
+    private $config;
 
     private const fileSetting = 'Layout';
 
@@ -17,7 +19,7 @@ class Layout extends Config
     }
 
     protected function __construct() {
-        $font = $this->getSetting('FONT', self::fileSetting);
+        $font = Config::getSetting(self::fileSetting, 'FONT' );
         $this->loadResource();
         $this->connectFont($font);
     }
@@ -40,7 +42,6 @@ class Layout extends Config
     public function connectCSS()
     {
         foreach ($this->pathsCSS as $path)
-
             echo '<link rel="stylesheet" href='.$path.' type="text/css"/>';
     }
 

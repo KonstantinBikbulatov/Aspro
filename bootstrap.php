@@ -13,3 +13,8 @@ function includeClasses($className) {
 
     require_once $fullPath;
 }
+
+$layout = Layout::getInstance();
+$DB = DB::getInstance();
+
+$model = new Product('Products',1);
